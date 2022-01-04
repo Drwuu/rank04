@@ -28,7 +28,6 @@ int	is_sep(char *str)
 int	get_cmds_nb(char **av, int ac, int i)
 {
 	int nb = 1;
-
 	while (i < ac && av[i][0] != ';')
 	{
 		if (av[i][0] == '|')
@@ -87,44 +86,44 @@ t_cmd	*get_cmds(char **av, int ac, int *i)
 }
 void	child(t_cmd *cmd, int fd[2], char **env)
 {
-	dup2(fd[0], 0);
-	// dup2(fd[1], 1);
-	if (fd[0] == -1 || fd[1] == -1)
+	if (dup2(fd[1], 1) == -1)
 	{
 		ft_putstr("error: fatal\n", 2);
 		exit(1);
 	}
+	close(fd[0]);
+	close(fd[1]);
 	if (execve(cmd->args[0], cmd->args, env) < 0)
 	{
 		ft_putstr("error: cannot execute ", 2);
 		ft_putstr(cmd->args[0], 2);
 		ft_putstr("\n", 2);
 	}
-	close(fd[0]);
-	close(fd[1]);
 }
-void	exec(t_cmd *cmds, int cmd_nb, char **env)
+void	exec(t_cmd *cmds, char **env)
 {
-	while (cmds)
+	while (cmds->next)
 	{
-		pid_t pid = fork();
 		int fd[2];
 		pipe(fd);
+		pid_t pid = fork();
 		if (pid == 0)
 			child(cmds, fd, env);
-		// dup2(fd[0], 0);
-		// dup2(fd[1], 1);
-		while (cmd_nb > 0)
+		if (dup2(fd[0], 0) == -1)
 		{
-			dprintf(2, "exec | waiting\n");
-			// dup2(0, fd[0]);
-			// dup2(1, fd[1]);
-			wait(&pid);
-			cmd_nb--;
+			ft_putstr("error: fatal\n", 2);
+			exit(1);
 		}
+		wait(&pid);
 		close(fd[0]);
 		close(fd[1]);
 		cmds = cmds->next;
+	}
+	if (execve(cmds->args[0], cmds->args, env) < 0)
+	{
+		ft_putstr("error: cannot execute ", 2);
+		ft_putstr(cmds->args[0], 2);
+		ft_putstr("\n", 2);
 	}
 }
 
@@ -133,9 +132,9 @@ int main(int ac, char **av, char **env)
 	int i = 0;
 	while (++i < ac)
 	{
-		int cmd_nb = get_cmds_nb(av, ac, i);
 		t_cmd *cmds = get_cmds(av, ac, &i);
-		exec(cmds, cmd_nb, env);
+		if (cmds->args)
+			exec(cmds, env);
 	}
 	exit(0);
 }
