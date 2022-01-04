@@ -86,10 +86,13 @@ t_cmd	*get_cmds(char **av, int ac, int *i)
 }
 void	child(t_cmd *cmd, int fd[2], char **env)
 {
-	if (dup2(fd[1], 1) == -1)
+	if (cmd->next)
 	{
-		ft_putstr("error: fatal\n", 2);
-		exit(1);
+		if (dup2(fd[1], 1) == -1)
+		{
+			ft_putstr("error: fatal\n", 2);
+			exit(1);
+		}
 	}
 	close(fd[0]);
 	close(fd[1]);
@@ -102,7 +105,7 @@ void	child(t_cmd *cmd, int fd[2], char **env)
 }
 void	exec(t_cmd *cmds, char **env)
 {
-	while (cmds->next)
+	while (cmds)
 	{
 		int fd[2];
 		pipe(fd);
@@ -118,12 +121,6 @@ void	exec(t_cmd *cmds, char **env)
 		close(fd[0]);
 		close(fd[1]);
 		cmds = cmds->next;
-	}
-	if (execve(cmds->args[0], cmds->args, env) < 0)
-	{
-		ft_putstr("error: cannot execute ", 2);
-		ft_putstr(cmds->args[0], 2);
-		ft_putstr("\n", 2);
 	}
 }
 
