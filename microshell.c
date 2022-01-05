@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <wait.h>
+#include <string.h>
 
 typedef struct s_cmd t_cmd; 
 
@@ -24,7 +25,17 @@ int	is_sep(char *str)
 	else
 		return 0;
 }
-
+void	cd_builtin(t_cmd *cmd)
+{
+	if (!cmd->args[1] || cmd->args[2])
+		ft_putstr("error: cd: bad arguments\n", 2);
+	else if (chdir(cmd->args[1]))
+	{
+		ft_putstr("error: cd: cannot change directory to ", 2);
+		ft_putstr(cmd->args[1], 2);
+		ft_putstr("\n", 2);
+	}
+}
 int	get_cmds_nb(char **av, int ac, int i)
 {
 	int nb = 1;
@@ -130,7 +141,9 @@ int main(int ac, char **av, char **env)
 	while (++i < ac)
 	{
 		t_cmd *cmds = get_cmds(av, ac, &i);
-		if (cmds->args)
+		if (strcmp("cd", cmds->args[0]) == 0)
+			cd_builtin(cmds);
+		else if (cmds->args)
 			exec(cmds, env);
 	}
 	exit(0);
